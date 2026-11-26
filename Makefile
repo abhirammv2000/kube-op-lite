@@ -10,8 +10,12 @@ NAMESPACE ?= kube-op-lite-system
 
 # Tool versions pinned via `go run` so you don't need them globally installed.
 CONTROLLER_GEN ?= go run sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0
-ENVTEST ?= go run sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.18
+# setup-envtest@release-0.18 downloads from a Google Cloud bucket that now returns 401,
+# so `make test` could not fetch the API server and etcd. v0.25.3 uses the current
+# download location. It needs Go 1.26, which `go run` fetches on its own (GOTOOLCHAIN=auto).
+ENVTEST ?= go run sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.25.3
 ENVTEST_K8S_VERSION ?= 1.30.0
+CRD_FILE := gpu.kube-op-lite.io_gpuworkloads.yaml
 
 .PHONY: help
 help: ## Show this help.
@@ -21,9 +25,22 @@ help: ## Show this help.
 ##@ Development
 
 .PHONY: manifests
-manifests: ## Regenerate CRD, RBAC and webhook manifests from code markers.
+manifests: ## Regenerate CRD, RBAC and webhook manifests from code markers (and sync the chart's CRD).
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook \
 		paths="./..." output:crd:artifacts:config=config/crd/bases
+	cp config/crd/bases/$(CRD_FILE) charts/kube-op-lite/crds/$(CRD_FILE)
+
+.PHONY: verify-generated
+verify-generated: manifests generate ## Fail if generated files differ from what is committed.
+	git diff --exit-code -- api config charts
+	@test -z "$$(git ls-files --others --exclude-standard api config charts)" || \
+		(echo "untracked generated files:"; git ls-files --others --exclude-standard api config charts; exit 1)
+
+.PHONY: helm-lint
+helm-lint: ## Lint the chart and render it with and without webhooks.
+	helm lint charts/kube-op-lite
+	helm template kube-op-lite charts/kube-op-lite > /dev/null
+	helm template kube-op-lite charts/kube-op-lite --set webhook.enabled=true > /dev/null
 
 .PHONY: generate
 generate: ## Regenerate DeepCopy methods (zz_generated.deepcopy.go).
@@ -108,3 +125,7 @@ demo: kind-create kind-gpus cert-manager kind-load helm-install sample ## One-sh
 .PHONY: preemption-demo
 preemption-demo: ## Show a high-priority workload preempting a low-priority one for GPUs.
 	bash hack/preemption-demo.sh
+
+.PHONY: rollout-test
+rollout-test: ## Check that an image change finishes while every GPU is in use.
+	bash hack/rollout-test.sh

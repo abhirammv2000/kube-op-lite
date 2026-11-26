@@ -18,7 +18,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	gpuv1alpha1 "github.com/Arsh624/kube-op-lite/api/v1alpha1"
+	gpuv1alpha1 "github.com/abhirammv2000/kube-op-lite/api/v1alpha1"
 )
 
 // ctrlRequest is a small helper to build a reconcile.Request in tests.

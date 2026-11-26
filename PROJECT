@@ -6,7 +6,7 @@ domain: kube-op-lite.io
 layout:
 - go.kubebuilder.io/v4
 projectName: kube-op-lite
-repo: github.com/Arsh624/kube-op-lite
+repo: github.com/abhirammv2000/kube-op-lite
 resources:
 - api:
     crdVersion: v1
@@ -15,7 +15,7 @@ resources:
   domain: kube-op-lite.io
   group: gpu
   kind: GpuWorkload
-  path: github.com/Arsh624/kube-op-lite/api/v1alpha1
+  path: github.com/abhirammv2000/kube-op-lite/api/v1alpha1
   version: v1alpha1
   webhooks:
     defaulting: true

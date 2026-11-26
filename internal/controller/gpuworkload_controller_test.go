@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	gpuv1alpha1 "github.com/Arsh624/kube-op-lite/api/v1alpha1"
+	gpuv1alpha1 "github.com/abhirammv2000/kube-op-lite/api/v1alpha1"
 )
 
 var _ = Describe("GpuWorkload controller", func() {
@@ -73,7 +73,7 @@ var _ = Describe("GpuWorkload controller", func() {
 		Expect(dep.Spec.Template.Spec.Containers).To(HaveLen(1))
 		Expect(dep.Spec.Template.Spec.Containers[0].Image).To(Equal("nginx:1.27"))
 
-		By("expecting the simulated GPU count and priority to be surfaced")
+		By("expecting the GPU count and priority to be surfaced on the pods")
 		Expect(dep.Spec.Template.Labels).To(HaveKeyWithValue(labelGpuCount, "2"))
 		Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue(annPriority, "high"))
 
