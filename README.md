@@ -14,7 +14,7 @@ advertise fake GPU capacity, and `priority` maps to PriorityClasses, so the stoc
 kube-scheduler bin-packs GPUs and **preempts** low-priority work when they run out.
 No GPU hardware needed.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Arsh624/kube-op-lite)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/abhirammv2000/kube-op-lite)
 &nbsp;Opens a 4-core cloud dev box with Go, Docker, Kind, kubectl and Helm. Then run
 `make demo && make preemption-demo`.
 
@@ -159,7 +159,15 @@ Then, inside your WSL2 / Linux / macOS shell, install the toolchain:
 go version && docker --version && kubectl version --client && kind --version && helm version
 ```
 
-> First build only: run `go mod tidy` to download dependencies and generate `go.sum`.
+`make test` downloads the API server and etcd binaries that envtest needs. The helper that does
+it requires Go 1.26, which `go run` fetches by itself, so the first run takes a little longer.
+
+## Continuous integration
+
+GitHub Actions runs on every push and pull request: the unit and envtest suite, a check that
+the generated CRD, RBAC and DeepCopy files are committed, `helm lint` and a render of the chart
+with and without webhooks, and a Kind job that installs the operator with fake GPUs and runs
+`make preemption-demo` and `make rollout-test`.
 
 ---
 
@@ -214,6 +222,9 @@ kubectl delete gpuworkload gpuworkload-sample
 | Apply the sample | `make sample` |
 | Regenerate CRD/RBAC after editing types | `make manifests` |
 | Regenerate DeepCopy after editing types | `make generate` |
+| Check generated files are committed (CI runs this) | `make verify-generated` |
+| Lint and render the Helm chart | `make helm-lint` |
+| Check an image change finishes when all GPUs are in use | `make rollout-test` |
 | Tear down cluster | `make kind-delete` |
 
 ---
@@ -222,6 +233,10 @@ kubectl delete gpuworkload gpuworkload-sample
 
 - **Provision** — creating a `GpuWorkload` spins up a matching Deployment + Service.
 - **Upgrade** — changing `spec.image` triggers a rolling update of the child Deployment.
+  For GPU workloads (`gpuCount > 0`) the update replaces one pod at a time and never surges.
+  A surge pod needs free GPUs, so on a full cluster it would stay `Pending` and the rollout
+  would hang forever. The cost is that a single-replica GPU workload is briefly down while
+  its pod is replaced. `make rollout-test` checks this on a Kind cluster.
 - **Drain / Terminate** — on delete, a finalizer scales the Deployment to zero and holds the
   object in `Draining` until every pod has exited, reports `Terminated`, then releases it so
   owner-reference garbage collection removes the children.

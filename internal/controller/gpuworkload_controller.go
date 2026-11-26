@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	gpuv1alpha1 "github.com/Arsh624/kube-op-lite/api/v1alpha1"
+	gpuv1alpha1 "github.com/abhirammv2000/kube-op-lite/api/v1alpha1"
 )
 
 const (
@@ -236,6 +236,7 @@ func (r *GpuWorkloadReconciler) reconcileDeployment(ctx context.Context, wl *gpu
 		dep.Labels = podLabels
 		dep.Spec.Replicas = &replicas
 		dep.Spec.Selector = &metav1.LabelSelector{MatchLabels: selector}
+		dep.Spec.Strategy = rolloutStrategy(wl.Spec.GpuCount)
 		dep.Spec.Template = corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels:      podLabels,
@@ -255,6 +256,26 @@ func (r *GpuWorkloadReconciler) reconcileDeployment(ctx context.Context, wl *gpu
 		return controllerutil.SetControllerReference(wl, dep, r.Scheme)
 	})
 	return err
+}
+
+// rolloutStrategy decides how an image change is rolled out. The Deployment default
+// surges extra pods first, but a surge pod needs free GPUs. When the cluster is
+// full it stays Pending, the old pods are never replaced, and the rollout hangs. So
+// GPU workloads replace one pod at a time without surging: a pod is removed, which
+// frees its GPUs, and then the new pod can take them. Workloads without GPUs keep
+// the Kubernetes defaults, written out so the Deployment is not rewritten every pass.
+func rolloutStrategy(gpuCount int32) appsv1.DeploymentStrategy {
+	maxSurge, maxUnavailable := intstr.FromString("25%"), intstr.FromString("25%")
+	if gpuCount > 0 {
+		maxSurge, maxUnavailable = intstr.FromInt32(0), intstr.FromInt32(1)
+	}
+	return appsv1.DeploymentStrategy{
+		Type: appsv1.RollingUpdateDeploymentStrategyType,
+		RollingUpdate: &appsv1.RollingUpdateDeployment{
+			MaxSurge:       &maxSurge,
+			MaxUnavailable: &maxUnavailable,
+		},
+	}
 }
 
 // gpuResources requests real nvidia.com/gpu units so the scheduler enforces node

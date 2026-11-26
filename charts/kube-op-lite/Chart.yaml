@@ -9,9 +9,9 @@ keywords:
 - gpu
 - controller
 - kubebuilder
-home: https://github.com/Arsh624/kube-op-lite
+home: https://github.com/abhirammv2000/kube-op-lite
 sources:
-- https://github.com/Arsh624/kube-op-lite
+- https://github.com/abhirammv2000/kube-op-lite
 maintainers:
 - name: Arsh624
   url: https://github.com/Arsh624

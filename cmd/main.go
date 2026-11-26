@@ -12,8 +12,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	gpuv1alpha1 "github.com/Arsh624/kube-op-lite/api/v1alpha1"
-	"github.com/Arsh624/kube-op-lite/internal/controller"
+	gpuv1alpha1 "github.com/abhirammv2000/kube-op-lite/api/v1alpha1"
+	"github.com/abhirammv2000/kube-op-lite/internal/controller"
 )
 
 var (

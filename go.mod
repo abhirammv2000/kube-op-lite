@@ -1,4 +1,4 @@
-module github.com/Arsh624/kube-op-lite
+module github.com/abhirammv2000/kube-op-lite
 
 go 1.22.0
 
